@@ -27,7 +27,7 @@ public class UserService {
         return userStorage.updateUser(user);
     }
 
-    public User getUser(int id) {
+    public User getUser(long id) {
         return userStorage.getUser(id);
     }
 
@@ -35,22 +35,22 @@ public class UserService {
         return userStorage.getAllUsers();
     }
 
-    public void addFriend(int userId, int friendId) {
+    public void addFriend(long userId, long friendId) {
         if (userId == friendId) {
             throw new ValidationException("Пользователь не может добавить себя в друзья");
         }
         userStorage.addFriend(userId, friendId);
     }
 
-    public void removeFriend(int userId, int friendId) {
+    public void removeFriend(long userId, long friendId) {
         userStorage.removeFriend(userId, friendId);
     }
 
-    public List<User> getFriends(int userId) {
+    public List<User> getFriends(long userId) {
         return userStorage.getFriends(userId);
     }
 
-    public List<User> getCommonFriends(int userId, int otherId) {
+    public List<User> getCommonFriends(long userId, long otherId) {
         return userStorage.getCommonFriends(userId, otherId);
     }
 

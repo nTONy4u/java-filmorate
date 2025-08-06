@@ -13,7 +13,7 @@ import java.util.Set;
 
 @Data
 public class Film {
-    private int id;
+    private long id;
 
     @NotBlank(message = "Название не может быть пустым")
     private String name;
@@ -28,7 +28,7 @@ public class Film {
     @Positive(message = "Продолжительность должна быть положительной")
     private int duration;
 
-    private Set<Integer> likes = new HashSet<>();
+    private final Set<Long> likes = new HashSet<>();
 
     public int getLikesCount() {
         return likes.size();

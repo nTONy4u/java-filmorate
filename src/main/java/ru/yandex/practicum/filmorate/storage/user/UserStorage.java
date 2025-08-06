@@ -9,15 +9,15 @@ public interface UserStorage {
 
     User updateUser(User user);
 
-    User getUser(int id);
+    User getUser(long id);
 
     List<User> getAllUsers();
 
-    void addFriend(int userId, int friendId);
+    void addFriend(long userId, long friendId);
 
-    void removeFriend(int userId, int friendId);
+    void removeFriend(long userId, long friendId);
 
-    List<User> getFriends(int userId);
+    List<User> getFriends(long userId);
 
-    List<User> getCommonFriends(int userId, int otherId);
+    List<User> getCommonFriends(long userId, long otherId);
 }

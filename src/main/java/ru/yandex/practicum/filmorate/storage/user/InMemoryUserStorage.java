@@ -6,22 +6,18 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class InMemoryUserStorage implements UserStorage {
-    private final Map<Integer, User> users = new HashMap<>();
-    private final Map<Integer, Set<Integer>> friends = new HashMap<>();
-    private int idCounter = 1;
+    private final Map<Long, User> users = new HashMap<>();
+    private long idCounter = 1;
 
     @Override
     public User addUser(User user) {
         user.setId(idCounter++);
         users.put(user.getId(), user);
-        friends.put(user.getId(), new HashSet<>());
         return user;
     }
 
@@ -35,7 +31,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User getUser(int id) {
+    public User getUser(long id) {
         if (!users.containsKey(id)) {
             throw new NotFoundException("Пользователь с id=" + id + " не найден");
         }
@@ -48,38 +44,36 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public void addFriend(int userId, int friendId) {
-        getUser(userId);
-        getUser(friendId);
-        friends.get(userId).add(friendId);
-        friends.get(friendId).add(userId);
+    public void addFriend(long userId, long friendId) {
+        User user = getUser(userId);
+        User friend = getUser(friendId);
+        user.getFriends().add(friendId);
+        friend.getFriends().add(userId);
     }
 
     @Override
-    public void removeFriend(int userId, int friendId) {
-        getUser(userId);
-        getUser(friendId);
-        friends.get(userId).remove(friendId);
-        friends.get(friendId).remove(userId);
+    public void removeFriend(long userId, long friendId) {
+        User user = getUser(userId);
+        User friend = getUser(friendId);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
     }
 
     @Override
-    public List<User> getFriends(int userId) {
-        getUser(userId);
-        return friends.get(userId).stream()
+    public List<User> getFriends(long userId) {
+        User user = getUser(userId);
+        return user.getFriends().stream()
                 .map(this::getUser)
                 .toList();
     }
 
     @Override
-    public List<User> getCommonFriends(int userId, int otherId) {
-        getUser(userId);
-        getUser(otherId);
+    public List<User> getCommonFriends(long userId, long otherId) {
+        User user = getUser(userId);
+        User otherUser = getUser(otherId);
 
-        Set<Integer> userFriends = new HashSet<>(friends.get(userId));
-        userFriends.retainAll(friends.get(otherId));
-
-        return userFriends.stream()
+        return user.getFriends().stream()
+                .filter(otherUser.getFriends()::contains)
                 .map(this::getUser)
                 .toList();
     }

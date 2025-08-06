@@ -6,22 +6,18 @@ import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
-    private final Map<Integer, Film> films = new HashMap<>();
-    private final Map<Integer, Set<Integer>> likes = new HashMap<>();
+    private final Map<Long, Film> films = new HashMap<>();
     private int idCounter = 1;
 
     @Override
     public Film addFilm(Film film) {
         film.setId(idCounter++);
         films.put(film.getId(), film);
-        likes.put(film.getId(), new HashSet<>());
         return film;
     }
 
@@ -35,7 +31,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film getFilm(int id) {
+    public Film getFilm(long id) {
         if (!films.containsKey(id)) {
             throw new NotFoundException("Фильм с id=" + id + " не найден");
         }
@@ -48,21 +44,21 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public void addLike(int filmId, int userId) {
-        getFilm(filmId);
-        likes.get(filmId).add(userId);
+    public void addLike(long filmId, long userId) {
+        Film film = getFilm(filmId);
+        film.getLikes().add(userId);
     }
 
     @Override
-    public void removeLike(int filmId, int userId) {
-        getFilm(filmId);
-        likes.get(filmId).remove(userId);
+    public void removeLike(long filmId, long userId) {
+        Film film = getFilm(filmId);
+        film.getLikes().remove(userId);
     }
 
     @Override
     public List<Film> getPopularFilms(int count) {
         return films.values().stream()
-                .sorted((f1, f2) -> Integer.compare(likes.get(f2.getId()).size(), likes.get(f1.getId()).size()))
+                .sorted((f1, f2) -> Integer.compare(f2.getLikes().size(), f1.getLikes().size()))
                 .limit(count)
                 .toList();
     }
