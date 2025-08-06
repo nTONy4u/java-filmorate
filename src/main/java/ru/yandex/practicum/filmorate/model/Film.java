@@ -8,10 +8,12 @@ import jakarta.validation.constraints.Size;
 import ru.yandex.practicum.filmorate.validation.ValidFilmReleaseDate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class Film {
-    private int id;
+    private long id;
 
     @NotBlank(message = "Название не может быть пустым")
     private String name;
@@ -25,4 +27,10 @@ public class Film {
 
     @Positive(message = "Продолжительность должна быть положительной")
     private int duration;
+
+    private final Set<Long> likes = new HashSet<>();
+
+    public int getLikesCount() {
+        return likes.size();
+    }
 }
