@@ -93,7 +93,7 @@ public class JdbcFilmRepository implements FilmDao {
 
     @Override
     public List<Film> getAllFilms() {
-        String sql = "SELECT * FROM films ORDER BY film_id";
+        String sql = "SELECT * FROM films ORDER BY film_id DESC";
         return jdbcTemplate.query(sql, this::mapRowToFilm);
     }
 
