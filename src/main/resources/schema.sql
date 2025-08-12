@@ -44,3 +44,7 @@ CREATE TABLE IF NOT EXISTS film_genres (
     genre_id INTEGER REFERENCES genres (genre_id),
     PRIMARY KEY (film_id, genre_id)
 );
+
+ALTER SEQUENCE IF EXISTS users_user_id_seq RESTART WITH 1;
+
+ALTER SEQUENCE IF EXISTS films_film_id_seq RESTART WITH 1;
