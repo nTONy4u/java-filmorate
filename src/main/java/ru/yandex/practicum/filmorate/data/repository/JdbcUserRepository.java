@@ -82,7 +82,7 @@ public class JdbcUserRepository implements UserDao {
 
     @Override
     public List<User> getAllUsers() {
-        String sql = "SELECT * FROM users";
+        String sql = "SELECT * FROM users ORDER BY user_id";
         return jdbcTemplate.query(sql, this::mapRowToUser);
     }
 
