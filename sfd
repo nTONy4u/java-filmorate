@@ -1,0 +1,3884 @@
+[1mdiff --git a/application.properties b/application.properties[m
+[1mnew file mode 100644[m
+[1mindex 0000000..cc392b5[m
+[1m--- /dev/null[m
+[1m+++ b/application.properties[m
+[36m@@ -0,0 +1 @@[m
+[32m+[m[32mlogging.level.org.zalando.logbook=TRACE[m
+\ No newline at end of file[m
+[1mdiff --git a/pom.xml b/pom.xml[m
+[1mindex 719ad7a..2480aba 100644[m
+[1m--- a/pom.xml[m
+[1m+++ b/pom.xml[m
+[36m@@ -50,6 +50,12 @@[m
+ 			<artifactId>junit-jupiter-api</artifactId>[m
+ 			<scope>test</scope>[m
+ 		</dependency>[m
+[32m+[m
+[32m+[m		[32m<dependency>[m
+[32m+[m			[32m<groupId>org.zalando</groupId>[m
+[32m+[m			[32m<artifactId>logbook-spring-boot-starter</artifactId>[m
+[32m+[m			[32m<version>3.7.2</version>[m
+[32m+[m		[32m</dependency>[m
+ 	</dependencies>[m
+ [m
+ 	<build>[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/controller/FilmController.java b/src/main/java/ru/yandex/practicum/filmorate/controller/FilmController.java[m
+[1mindex 5408b51..3d22b5e 100644[m
+[1m--- a/src/main/java/ru/yandex/practicum/filmorate/controller/FilmController.java[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/controller/FilmController.java[m
+[36m@@ -2,48 +2,72 @@[m [mpackage ru.yandex.practicum.filmorate.controller;[m
+ [m
+ import jakarta.validation.Valid;[m
+ import lombok.extern.slf4j.Slf4j;[m
+[32m+[m[32mimport org.springframework.beans.factory.annotation.Autowired;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.DeleteMapping;[m
+ import org.springframework.web.bind.annotation.GetMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.PathVariable;[m
+ import org.springframework.web.bind.annotation.PostMapping;[m
+ import org.springframework.web.bind.annotation.PutMapping;[m
+ import org.springframework.web.bind.annotation.RequestBody;[m
+ import org.springframework.web.bind.annotation.RequestMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.RequestParam;[m
+ import org.springframework.web.bind.annotation.RestController;[m
+[31m-import ru.yandex.practicum.filmorate.exception.NotFoundException;[m
+ import ru.yandex.practicum.filmorate.model.Film;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.service.FilmService;[m
+ [m
+[31m-import java.util.ArrayList;[m
+[31m-import java.util.HashMap;[m
+ import java.util.List;[m
+[31m-import java.util.Map;[m
+ [m
+ @RestController[m
+ @RequestMapping("/films")[m
+ @Slf4j[m
+ public class FilmController {[m
+[31m-    private final Map<Integer, Film> films = new HashMap<>();[m
+[31m-    private int idCounter = 1;[m
+[32m+[m[32m    private final FilmService filmService;[m
+[32m+[m
+[32m+[m[32m    @Autowired[m
+[32m+[m[32m    public FilmController(FilmService filmService) {[m
+[32m+[m[32m        this.filmService = filmService;[m
+[32m+[m[32m    }[m
+ [m
+     @PostMapping[m
+     public Film addFilm(@Valid @RequestBody Film film) {[m
+[31m-        film.setId(idCounter++);[m
+[31m-        films.put(film.getId(), film);[m
+[31m-        log.info("Добавлен фильм: {}", film);[m
+[31m-        return film;[m
+[32m+[m[32m        log.info("Добавление фильма: {}", film);[m
+[32m+[m[32m        return filmService.addFilm(film);[m
+     }[m
+ [m
+     @PutMapping[m
+     public Film updateFilm(@Valid @RequestBody Film film) {[m
+[31m-        if (!films.containsKey(film.getId())) {[m
+[31m-            log.error("Фильм с id {} не найден", film.getId());[m
+[31m-            throw new NotFoundException("Фильм с указанным id не существует");[m
+[31m-        }[m
+[31m-        films.put(film.getId(), film);[m
+[31m-        log.info("Обновлен фильм: {}", film);[m
+[31m-        return film;[m
+[32m+[m[32m        log.info("Обновление фильма: {}", film);[m
+[32m+[m[32m        return filmService.updateFilm(film);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/{id}")[m
+[32m+[m[32m    public Film getFilm(@PathVariable int id) {[m
+[32m+[m[32m        log.info("Получение фильма с id={}", id);[m
+[32m+[m[32m        return filmService.getFilm(id);[m
+     }[m
+ [m
+     @GetMapping[m
+     public List<Film> getAllFilms() {[m
+[31m-        return new ArrayList<>(films.values());[m
+[32m+[m[32m        log.info("Получение всех фильмов");[m
+[32m+[m[32m        return filmService.getAllFilms();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @PutMapping("/{id}/like/{userId}")[m
+[32m+[m[32m    public void addLike(@PathVariable int id, @PathVariable int userId) {[m
+[32m+[m[32m        log.info("Добавление лайка фильму {} от пользователя {}", id, userId);[m
+[32m+[m[32m        filmService.addLike(id, userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @DeleteMapping("/{id}/like/{userId}")[m
+[32m+[m[32m    public void removeLike(@PathVariable int id, @PathVariable int userId) {[m
+[32m+[m[32m        log.info("Удаление лайка у фильма {} от пользователя {}", id, userId);[m
+[32m+[m[32m        filmService.removeLike(id, userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/popular")[m
+[32m+[m[32m    public List<Film> getPopularFilms([m
+[32m+[m[32m            @RequestParam(defaultValue = "10", required = false) int count) {[m
+[32m+[m[32m        log.info("Получение {} самых популярных фильмов", count);[m
+[32m+[m[32m        return filmService.getPopularFilms(count);[m
+     }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/controller/UserController.java b/src/main/java/ru/yandex/practicum/filmorate/controller/UserController.java[m
+[1mindex 0e028b5..02e44b5 100644[m
+[1m--- a/src/main/java/ru/yandex/practicum/filmorate/controller/UserController.java[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/controller/UserController.java[m
+[36m@@ -2,55 +2,76 @@[m [mpackage ru.yandex.practicum.filmorate.controller;[m
+ [m
+ import jakarta.validation.Valid;[m
+ import lombok.extern.slf4j.Slf4j;[m
+[32m+[m[32mimport org.springframework.beans.factory.annotation.Autowired;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.DeleteMapping;[m
+ import org.springframework.web.bind.annotation.GetMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.PathVariable;[m
+ import org.springframework.web.bind.annotation.PostMapping;[m
+ import org.springframework.web.bind.annotation.PutMapping;[m
+ import org.springframework.web.bind.annotation.RequestBody;[m
+ import org.springframework.web.bind.annotation.RequestMapping;[m
+ import org.springframework.web.bind.annotation.RestController;[m
+[31m-import ru.yandex.practicum.filmorate.exception.NotFoundException;[m
+ import ru.yandex.practicum.filmorate.model.User;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.service.UserService;[m
+ [m
+[31m-import java.util.ArrayList;[m
+[31m-import java.util.HashMap;[m
+ import java.util.List;[m
+[31m-import java.util.Map;[m
+ [m
+ @RestController[m
+ @RequestMapping("/users")[m
+ @Slf4j[m
+ public class UserController {[m
+[31m-    private final Map<Integer, User> users = new HashMap<>();[m
+[31m-    private int idCounter = 1;[m
+[32m+[m[32m    private final UserService userService;[m
+[32m+[m
+[32m+[m[32m    @Autowired[m
+[32m+[m[32m    public UserController(UserService userService) {[m
+[32m+[m[32m        this.userService = userService;[m
+[32m+[m[32m    }[m
+ [m
+     @PostMapping[m
+     public User addUser(@Valid @RequestBody User user) {[m
+[31m-        user.setId(idCounter++);[m
+[31m-[m
+[31m-        if (user.getName() == null || user.getName().isBlank()) {[m
+[31m-            user.setName(user.getLogin());[m
+[31m-        }[m
+[31m-[m
+[31m-        users.put(user.getId(), user);[m
+[31m-        log.info("Добавлен пользователь: {}", user);[m
+[31m-        return user;[m
+[32m+[m[32m        log.info("Добавление пользователя: {}", user);[m
+[32m+[m[32m        return userService.addUser(user);[m
+     }[m
+ [m
+     @PutMapping[m
+     public User updateUser(@Valid @RequestBody User user) {[m
+[31m-        if (!users.containsKey(user.getId())) {[m
+[31m-            log.error("Пользователь с id {} не найден", user.getId());[m
+[31m-            throw new NotFoundException("Пользователь с указанным id не существует");[m
+[31m-        }[m
+[32m+[m[32m        log.info("Обновление пользователя: {}", user);[m
+[32m+[m[32m        return userService.updateUser(user);[m
+[32m+[m[32m    }[m
+ [m
+[31m-        users.put(user.getId(), user);[m
+[31m-        log.info("Обновлен пользователь: {}", user);[m
+[31m-        return user;[m
+[32m+[m[32m    @GetMapping("/{id}")[m
+[32m+[m[32m    public User getUser(@PathVariable int id) {[m
+[32m+[m[32m        log.info("Получение пользователя с id={}", id);[m
+[32m+[m[32m        return userService.getUser(id);[m
+     }[m
+ [m
+     @GetMapping[m
+     public List<User> getAllUsers() {[m
+[31m-        log.info("Текущее количество пользователей: {}", users.size());[m
+[31m-        return new ArrayList<>(users.values());[m
+[32m+[m[32m        log.info("Получение всех пользователей");[m
+[32m+[m[32m        return userService.getAllUsers();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @PutMapping("/{id}/friends/{friendId}")[m
+[32m+[m[32m    public void addFriend(@PathVariable int id, @PathVariable int friendId) {[m
+[32m+[m[32m        log.info("Добавление в друзья: пользователь {} добавляет пользователя {}", id, friendId);[m
+[32m+[m[32m        userService.addFriend(id, friendId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @DeleteMapping("/{id}/friends/{friendId}")[m
+[32m+[m[32m    public void removeFriend(@PathVariable int id, @PathVariable int friendId) {[m
+[32m+[m[32m        log.info("Удаление из друзей: пользователь {} удаляет пользователя {}", id, friendId);[m
+[32m+[m[32m        userService.removeFriend(id, friendId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/{id}/friends")[m
+[32m+[m[32m    public List<User> getFriends(@PathVariable int id) {[m
+[32m+[m[32m        log.info("Получение списка друзей пользователя {}", id);[m
+[32m+[m[32m        return userService.getFriends(id);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/{id}/friends/common/{otherId}")[m
+[32m+[m[32m    public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {[m
+[32m+[m[32m        log.info("Получение общих друзей пользователей {} и {}", id, otherId);[m
+[32m+[m[32m        return userService.getCommonFriends(id, otherId);[m
+     }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/exception/GlobalExceptionHandler.java b/src/main/java/ru/yandex/practicum/filmorate/exception/GlobalExceptionHandler.java[m
+[1mindex 4e52036..12d7d70 100644[m
+[1m--- a/src/main/java/ru/yandex/practicum/filmorate/exception/GlobalExceptionHandler.java[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/exception/GlobalExceptionHandler.java[m
+[36m@@ -33,4 +33,10 @@[m [mpublic class GlobalExceptionHandler {[m
+     public ErrorResponse handleNotFoundException(final NotFoundException e) {[m
+         return new ErrorResponse(e.getMessage());[m
+     }[m
+[32m+[m
+[32m+[m[32m    @ExceptionHandler[m
+[32m+[m[32m    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)[m
+[32m+[m[32m    public ErrorResponse handleThrowable(final Throwable e) {[m
+[32m+[m[32m        return new ErrorResponse("Произошла непредвиденная ошибка: " + e.getMessage());[m
+[32m+[m[32m    }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/model/Film.java b/src/main/java/ru/yandex/practicum/filmorate/model/Film.java[m
+[1mindex f0c083e..6b29c29 100644[m
+[1m--- a/src/main/java/ru/yandex/practicum/filmorate/model/Film.java[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/model/Film.java[m
+[36m@@ -8,6 +8,8 @@[m [mimport jakarta.validation.constraints.Size;[m
+ import ru.yandex.practicum.filmorate.validation.ValidFilmReleaseDate;[m
+ [m
+ import java.time.LocalDate;[m
+[32m+[m[32mimport java.util.HashSet;[m
+[32m+[m[32mimport java.util.Set;[m
+ [m
+ @Data[m
+ public class Film {[m
+[36m@@ -25,4 +27,10 @@[m [mpublic class Film {[m
+ [m
+     @Positive(message = "Продолжительность должна быть положительной")[m
+     private int duration;[m
+[32m+[m
+[32m+[m[32m    private Set<Integer> likes = new HashSet<>();[m
+[32m+[m
+[32m+[m[32m    public int getLikesCount() {[m
+[32m+[m[32m        return likes.size();[m
+[32m+[m[32m    }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/service/FilmService.java b/src/main/java/ru/yandex/practicum/filmorate/service/FilmService.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b937001[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/service/FilmService.java[m
+[36m@@ -0,0 +1,50 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.service;[m
+[32m+[m
+[32m+[m[32mimport org.springframework.beans.factory.annotation.Autowired;[m
+[32m+[m[32mimport org.springframework.stereotype.Service;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.Film;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.storage.film.FilmStorage;[m
+[32m+[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32m@Service[m
+[32m+[m[32mpublic class FilmService {[m
+[32m+[m[32m    private final FilmStorage filmStorage;[m
+[32m+[m[32m    private final UserService userService;[m
+[32m+[m
+[32m+[m[32m    @Autowired[m
+[32m+[m[32m    public FilmService(FilmStorage filmStorage, UserService userService) {[m
+[32m+[m[32m        this.filmStorage = filmStorage;[m
+[32m+[m[32m        this.userService = userService;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public Film addFilm(Film film) {[m
+[32m+[m[32m        return filmStorage.addFilm(film);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public Film updateFilm(Film film) {[m
+[32m+[m[32m        return filmStorage.updateFilm(film);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public Film getFilm(int id) {[m
+[32m+[m[32m        return filmStorage.getFilm(id);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public List<Film> getAllFilms() {[m
+[32m+[m[32m        return filmStorage.getAllFilms();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void addLike(int filmId, int userId) {[m
+[32m+[m[32m        userService.getUser(userId);[m
+[32m+[m[32m        filmStorage.addLike(filmId, userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void removeLike(int filmId, int userId) {[m
+[32m+[m[32m        userService.getUser(userId);[m
+[32m+[m[32m        filmStorage.removeLike(filmId, userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public List<Film> getPopularFilms(int count) {[m
+[32m+[m[32m        return filmStorage.getPopularFilms(count);[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/service/UserService.java b/src/main/java/ru/yandex/practicum/filmorate/service/UserService.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1ff3824[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/service/UserService.java[m
+[36m@@ -0,0 +1,62 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.service;[m
+[32m+[m
+[32m+[m[32mimport org.springframework.beans.factory.annotation.Autowired;[m
+[32m+[m[32mimport org.springframework.stereotype.Service;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.exception.ValidationException;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.User;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.storage.user.UserStorage;[m
+[32m+[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32m@Service[m
+[32m+[m[32mpublic class UserService {[m
+[32m+[m[32m    private final UserStorage userStorage;[m
+[32m+[m
+[32m+[m[32m    @Autowired[m
+[32m+[m[32m    public UserService(UserStorage userStorage) {[m
+[32m+[m[32m        this.userStorage = userStorage;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public User addUser(User user) {[m
+[32m+[m[32m        validateUser(user);[m
+[32m+[m[32m        return userStorage.addUser(user);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public User updateUser(User user) {[m
+[32m+[m[32m        validateUser(user);[m
+[32m+[m[32m        return userStorage.updateUser(user);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public User getUser(int id) {[m
+[32m+[m[32m        return userStorage.getUser(id);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public List<User> getAllUsers() {[m
+[32m+[m[32m        return userStorage.getAllUsers();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void addFriend(int userId, int friendId) {[m
+[32m+[m[32m        if (userId == friendId) {[m
+[32m+[m[32m            throw new ValidationException("Пользователь не может добавить себя в друзья");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        userStorage.addFriend(userId, friendId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void removeFriend(int userId, int friendId) {[m
+[32m+[m[32m        userStorage.removeFriend(userId, friendId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public List<User> getFriends(int userId) {[m
+[32m+[m[32m        return userStorage.getFriends(userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public List<User> getCommonFriends(int userId, int otherId) {[m
+[32m+[m[32m        return userStorage.getCommonFriends(userId, otherId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private void validateUser(User user) {[m
+[32m+[m[32m        if (user.getName() == null || user.getName().isBlank()) {[m
+[32m+[m[32m            user.setName(user.getLogin());[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/storage/film/FilmStorage.java b/src/main/java/ru/yandex/practicum/filmorate/storage/film/FilmStorage.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ae63637[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/storage/film/FilmStorage.java[m
+[36m@@ -0,0 +1,21 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.storage.film;[m
+[32m+[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.Film;[m
+[32m+[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32mpublic interface FilmStorage {[m
+[32m+[m[32m    Film addFilm(Film film);[m
+[32m+[m
+[32m+[m[32m    Film updateFilm(Film film);[m
+[32m+[m
+[32m+[m[32m    Film getFilm(int id);[m
+[32m+[m
+[32m+[m[32m    List<Film> getAllFilms();[m
+[32m+[m
+[32m+[m[32m    void addLike(int filmId, int userId);[m
+[32m+[m
+[32m+[m[32m    void removeLike(int filmId, int userId);[m
+[32m+[m
+[32m+[m[32m    List<Film> getPopularFilms(int count);[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/storage/film/InMemoryFilmStorage.java b/src/main/java/ru/yandex/practicum/filmorate/storage/film/InMemoryFilmStorage.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..41ee553[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/storage/film/InMemoryFilmStorage.java[m
+[36m@@ -0,0 +1,69 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.storage.film;[m
+[32m+[m
+[32m+[m[32mimport org.springframework.stereotype.Component;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.exception.NotFoundException;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.Film;[m
+[32m+[m
+[32m+[m[32mimport java.util.ArrayList;[m
+[32m+[m[32mimport java.util.HashMap;[m
+[32m+[m[32mimport java.util.HashSet;[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m[32mimport java.util.Map;[m
+[32m+[m[32mimport java.util.Set;[m
+[32m+[m
+[32m+[m[32m@Component[m
+[32m+[m[32mpublic class InMemoryFilmStorage implements FilmStorage {[m
+[32m+[m[32m    private final Map<Integer, Film> films = new HashMap<>();[m
+[32m+[m[32m    private final Map<Integer, Set<Integer>> likes = new HashMap<>();[m
+[32m+[m[32m    private int idCounter = 1;[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public Film addFilm(Film film) {[m
+[32m+[m[32m        film.setId(idCounter++);[m
+[32m+[m[32m        films.put(film.getId(), film);[m
+[32m+[m[32m        likes.put(film.getId(), new HashSet<>());[m
+[32m+[m[32m        return film;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public Film updateFilm(Film film) {[m
+[32m+[m[32m        if (!films.containsKey(film.getId())) {[m
+[32m+[m[32m            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        films.put(film.getId(), film);[m
+[32m+[m[32m        return film;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public Film getFilm(int id) {[m
+[32m+[m[32m        if (!films.containsKey(id)) {[m
+[32m+[m[32m            throw new NotFoundException("Фильм с id=" + id + " не найден");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        return films.get(id);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public List<Film> getAllFilms() {[m
+[32m+[m[32m        return new ArrayList<>(films.values());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public void addLike(int filmId, int userId) {[m
+[32m+[m[32m        getFilm(filmId);[m
+[32m+[m[32m        likes.get(filmId).add(userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public void removeLike(int filmId, int userId) {[m
+[32m+[m[32m        getFilm(filmId);[m
+[32m+[m[32m        likes.get(filmId).remove(userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public List<Film> getPopularFilms(int count) {[m
+[32m+[m[32m        return films.values().stream()[m
+[32m+[m[32m                .sorted((f1, f2) -> Integer.compare(likes.get(f2.getId()).size(), likes.get(f1.getId()).size()))[m
+[32m+[m[32m                .limit(count)[m
+[32m+[m[32m                .toList();[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/storage/user/InMemoryUserStorage.java b/src/main/java/ru/yandex/practicum/filmorate/storage/user/InMemoryUserStorage.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..49cc54b[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/storage/user/InMemoryUserStorage.java[m
+[36m@@ -0,0 +1,86 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.storage.user;[m
+[32m+[m
+[32m+[m[32mimport org.springframework.stereotype.Component;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.exception.NotFoundException;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.User;[m
+[32m+[m
+[32m+[m[32mimport java.util.ArrayList;[m
+[32m+[m[32mimport java.util.HashMap;[m
+[32m+[m[32mimport java.util.HashSet;[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m[32mimport java.util.Map;[m
+[32m+[m[32mimport java.util.Set;[m
+[32m+[m
+[32m+[m[32m@Component[m
+[32m+[m[32mpublic class InMemoryUserStorage implements UserStorage {[m
+[32m+[m[32m    private final Map<Integer, User> users = new HashMap<>();[m
+[32m+[m[32m    private final Map<Integer, Set<Integer>> friends = new HashMap<>();[m
+[32m+[m[32m    private int idCounter = 1;[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public User addUser(User user) {[m
+[32m+[m[32m        user.setId(idCounter++);[m
+[32m+[m[32m        users.put(user.getId(), user);[m
+[32m+[m[32m        friends.put(user.getId(), new HashSet<>());[m
+[32m+[m[32m        return user;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public User updateUser(User user) {[m
+[32m+[m[32m        if (!users.containsKey(user.getId())) {[m
+[32m+[m[32m            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        users.put(user.getId(), user);[m
+[32m+[m[32m        return user;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public User getUser(int id) {[m
+[32m+[m[32m        if (!users.containsKey(id)) {[m
+[32m+[m[32m            throw new NotFoundException("Пользователь с id=" + id + " не найден");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        return users.get(id);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public List<User> getAllUsers() {[m
+[32m+[m[32m        return new ArrayList<>(users.values());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public void addFriend(int userId, int friendId) {[m
+[32m+[m[32m        getUser(userId);[m
+[32m+[m[32m        getUser(friendId);[m
+[32m+[m[32m        friends.get(userId).add(friendId);[m
+[32m+[m[32m        friends.get(friendId).add(userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public void removeFriend(int userId, int friendId) {[m
+[32m+[m[32m        getUser(userId);[m
+[32m+[m[32m        getUser(friendId);[m
+[32m+[m[32m        friends.get(userId).remove(friendId);[m
+[32m+[m[32m        friends.get(friendId).remove(userId);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public List<User> getFriends(int userId) {[m
+[32m+[m[32m        getUser(userId);[m
+[32m+[m[32m        return friends.get(userId).stream()[m
+[32m+[m[32m                .map(this::getUser)[m
+[32m+[m[32m                .toList();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public List<User> getCommonFriends(int userId, int otherId) {[m
+[32m+[m[32m        getUser(userId);[m
+[32m+[m[32m        getUser(otherId);[m
+[32m+[m
+[32m+[m[32m        Set<Integer> userFriends = new HashSet<>(friends.get(userId));[m
+[32m+[m[32m        userFriends.retainAll(friends.get(otherId));[m
+[32m+[m
+[32m+[m[32m        return userFriends.stream()[m
+[32m+[m[32m                .map(this::getUser)[m
+[32m+[m[32m                .toList();[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/ru/yandex/practicum/filmorate/storage/user/UserStorage.java b/src/main/java/ru/yandex/practicum/filmorate/storage/user/UserStorage.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..60653d6[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/java/ru/yandex/practicum/filmorate/storage/user/UserStorage.java[m
+[36m@@ -0,0 +1,23 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.storage.user;[m
+[32m+[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.User;[m
+[32m+[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32mpublic interface UserStorage {[m
+[32m+[m[32m    User addUser(User user);[m
+[32m+[m
+[32m+[m[32m    User updateUser(User user);[m
+[32m+[m
+[32m+[m[32m    User getUser(int id);[m
+[32m+[m
+[32m+[m[32m    List<User> getAllUsers();[m
+[32m+[m
+[32m+[m[32m    void addFriend(int userId, int friendId);[m
+[32m+[m
+[32m+[m[32m    void removeFriend(int userId, int friendId);[m
+[32m+[m
+[32m+[m[32m    List<User> getFriends(int userId);[m
+[32m+[m
+[32m+[m[32m    List<User> getCommonFriends(int userId, int otherId);[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/resources/application.properties b/src/main/resources/application.properties[m
+[1mindex 8b13789..cc392b5 100644[m
+[1m--- a/src/main/resources/application.properties[m
+[1m+++ b/src/main/resources/application.properties[m
+[36m@@ -1 +1 @@[m
+[31m-[m
+[32m+[m[32mlogging.level.org.zalando.logbook=TRACE[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/resources/postman/postman.json b/src/main/resources/postman/postmanPR1.json[m
+[1msimilarity index 100%[m
+[1mrename from src/main/resources/postman/postman.json[m
+[1mrename to src/main/resources/postman/postmanPR1.json[m
+[1mdiff --git a/src/main/resources/postman/sprint.json b/src/main/resources/postman/sprint.json[m
+[1mnew file mode 100644[m
+[1mindex 0000000..64be278[m
+[1m--- /dev/null[m
+[1m+++ b/src/main/resources/postman/sprint.json[m
+[36m@@ -0,0 +1,3016 @@[m
+[32m+[m[32m{[m
+[32m+[m	[32m"info": {[m
+[32m+[m		[32m"_postman_id": "c48e59d5-4de8-4757-a8c4-c13e763036df",[m
+[32m+[m		[32m"name": "add-friends-likes",[m
+[32m+[m		[32m"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",[m
+[32m+[m		[32m"_exporter_id": "23073145",[m
+[32m+[m		[32m"_collection_link": "https://universal-shadow-295426.postman.co/workspace/My-Workspace~4200f6aa-0504-44b1-8a1d-707d0dcbd5ce/collection/23073145-c48e59d5-4de8-4757-a8c4-c13e763036df?action=share&source=collection_link&creator=23073145"[m
+[32m+[m	[32m},[m
+[32m+[m	[32m"item": [[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"name": "users",[m
+[32m+[m			[32m"item": [[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User create",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const source = JSON.parse(pm.request.body.raw)\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200 or 201\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,201]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has user create response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'id' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('id');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'email' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('email');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.email, `\"email\" must be \"${source.mail}\"`).to.eql(source.email);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'name' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('name');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.name, `\"name\" must be \"${source.name}\"`).to.eql(source.name);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'login' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('login');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.login, `\"login\" field must be \"${source.login}\"`).to.eql(source.login);    \r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'birthday' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('birthday');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.birthday, `\"birthday\" field must be \"${source.birthday}\"`).to.eql(source.birthday);\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = rnd.getUser();\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    pm.request.body.update({\r",[m
+[32m+[m									[32m"        mode: 'raw',\r",[m
+[32m+[m									[32m"        raw: JSON.stringify(user),\r",[m
+[32m+[m									[32m"        options: { raw: { language: 'json' } }\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"login\": \"dolore\",\n  \"name\": \"Nick Name\",\n  \"email\": \"mail@mail.ru\",\n  \"birthday\": \"1946-08-20\"\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User create Fail login",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"login\": \"dolore ullamco\",\n  \"email\": \"yandex@mail.ru\",\n  \"birthday\": \"2446-08-20\"\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User create Fail email",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"login\": \"dolore ullamco\",\n  \"name\": \"\",\n  \"email\": \"mail.ru\",\n  \"birthday\": \"1980-08-20\"\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User create Fail birthday",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"login\": \"dolore\",\n  \"name\": \"\",\n  \"email\": \"test@mail.ru\",\n  \"birthday\": \"2446-08-20\"\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User update",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const source = pm.collectionVariables.get(\"user\")\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.ok;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has user update response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'id' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('id');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.id, `\"id\" must be ${source.id}`).to.eql(source.id);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'email' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('email');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.email, '\"email\" must be \"mail@yandex.ru\"').to.eql('mail@yandex.ru');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'name' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('name');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.name, '\"name\" must be \"est adipisicing\"').to.eql('est adipisicing');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'login' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('login');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.login, '\"login\" field must be \"doloreUpdate\"').to.eql('doloreUpdate');    \r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user 'birthday' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('birthday');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.birthday, '\"birthday\" field must be \"1976-09-20\"').to.eql('1976-09-20');\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"user\", user);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    pm.request.body.update({\r",[m
+[32m+[m									[32m"        mode: 'raw',\r",[m
+[32m+[m									[32m"        raw: JSON.stringify({\r",[m
+[32m+[m									[32m"            \"login\": \"doloreUpdate\",\r",[m
+[32m+[m									[32m"            \"name\": \"est adipisicing\",\r",[m
+[32m+[m									[32m"            \"id\": user.id,\r",[m
+[32m+[m									[32m"            \"email\": \"mail@yandex.ru\",\r",[m
+[32m+[m									[32m"            \"birthday\": \"1976-09-20\"\r",[m
+[32m+[m									[32m"            }),\r",[m
+[32m+[m									[32m"        options: { raw: { language: 'json' } }\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User update unknown",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"user\", user);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    pm.request.body.update({\r",[m
+[32m+[m									[32m"        mode: 'raw',\r",[m
+[32m+[m									[32m"        raw: JSON.stringify({\r",[m
+[32m+[m									[32m"            \"login\": \"doloreUpdate\",\r",[m
+[32m+[m									[32m"            \"name\": \"est adipisicing\",\r",[m
+[32m+[m									[32m"            \"id\": user.id+1,\r",[m
+[32m+[m									[32m"            \"email\": \"mail@yandex.ru\",\r",[m
+[32m+[m									[32m"            \"birthday\": \"1976-09-20\"\r",[m
+[32m+[m									[32m"            }),\r",[m
+[32m+[m									[32m"        options: { raw: { language: 'json' } }\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"login\": \"doloreUpdate\",\n  \"name\": \"est adipisicing\",\n  \"id\": 9999,\n  \"email\": \"mail@yandex.ru\",\n  \"birthday\": \"1976-09-20\"\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "User get All",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.ok;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test list user response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test user[0] 'id' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData[0]).to.have.property('id');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData[0].id, '\"id\" must be 1').to.eql(1);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "GET",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m}[m
+[32m+[m			[32m][m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"name": "friends",[m
+[32m+[m			[32m"item": [[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend add",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const user1_id = pm.collectionVariables.get(\"id\");\r",[m
+[32m+[m									[32m"const user2_id = pm.collectionVariables.get(\"friend_id\");\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/users/\" + user1_id + '/friends',\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    pm.test(\"user1 has user2 friend\", function () {\r",[m
+[32m+[m									[32m"        pm.expect(response.json()[0].id).to.be.equal(user2_id);\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/users/\" + user2_id + '/friends',\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    pm.test(\"user2 has have user1 friend\", function () {\r",[m
+[32m+[m									[32m"        pm.expect(response.json()[0].id).to.be.equal(user1_id)\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend add unknown id",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id+1);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend get",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const user_friends = pm.collectionVariables.get(\"user_friends\");\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"initially user1 should have 0 friends\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(user_friends.length).to.be.equal(0);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"finally user1 should have 1 friend\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.json().length).to.be.equal(1);\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2, user1_friends;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user1_friends = await api.getFriends(user1.id);\r",[m
+[32m+[m									[32m"        await api.addFriend(user1.id, user2.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"user_friends\", user1_friends);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"protocolProfileBehavior": {[m
+[32m+[m						[32m"disableBodyPruning": true[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "GET",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend get unknown id",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id+1);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"protocolProfileBehavior": {[m
+[32m+[m						[32m"disableBodyPruning": true[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "GET",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend remove",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const user1_id = pm.collectionVariables.get(\"id\");\r",[m
+[32m+[m									[32m"const user2_id = pm.collectionVariables.get(\"friend_id\");\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/users/\" + user1_id + '/friends',\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    pm.test(\"user1 should have 0 friends\", function () {\r",[m
+[32m+[m									[32m"        pm.expect(response.json().length).to.be.equal(0);\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/users/\" + user2_id + '/friends',\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    pm.test(\"user2 should have 0 friends\", function () {\r",[m
+[32m+[m									[32m"        pm.expect(response.json().length).to.be.equal(0);\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        await api.addFriend(user1.id, user2.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Not friend remove",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const user1_id = pm.collectionVariables.get(\"id\");\r",[m
+[32m+[m									[32m"const user2_id = pm.collectionVariables.get(\"friend_id\");\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/users/\" + user1_id + '/friends',\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    pm.test(\"user1 should have 0 friends\", function () {\r",[m
+[32m+[m									[32m"        pm.expect(response.json().length).to.be.equal(0);\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/users/\" + user2_id + '/friends',\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    pm.test(\"user2 should have 0 friends\", function () {\r",[m
+[32m+[m									[32m"        pm.expect(response.json().length).to.be.equal(0);\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend remove unknown id",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        await api.addFriend(user1.id, user2.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id + 4);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Friend remove unknown friend id",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        await api.addFriend(user1.id, user2.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id+1);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Get common friends",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const user3_id = pm.collectionVariables.get(\"user3_id\");\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"user1 should have 1 common friend with user2\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.json().length).to.be.equal(1);\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.json()[0].id).to.be.equal(user3_id);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2, user3;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user3 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        await api.addFriend(user1.id, user3.id);\r",[m
+[32m+[m									[32m"        await api.addFriend(user1.id, user2.id);\r",[m
+[32m+[m									[32m"        await api.addFriend(user2.id, user3.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"friend_id\", user2.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"user3_id\", user3.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"protocolProfileBehavior": {[m
+[32m+[m						[32m"disableBodyPruning": true[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "GET",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/users/{{id}}/friends/common/{{friend_id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"users",[m
+[32m+[m								[32m"{{id}}",[m
+[32m+[m								[32m"friends",[m
+[32m+[m								[32m"common",[m
+[32m+[m								[32m"{{friend_id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m}[m
+[32m+[m			[32m][m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"name": "films",[m
+[32m+[m			[32m"item": [[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film create",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const source = JSON.parse(pm.request.body.raw)\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200 or 201\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,201]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has film create response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'id' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('id');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'name' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('name');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.name, `\"name\" must be \"${source.name}\"`).to.eql(source.name);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'description' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('description');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.description, `\"description\" must be \"${source.description}\"`).to.eql(source.description);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'releaseDate' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('releaseDate');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.releaseDate, `\"releaseDate\" field must be \"${source.releaseDate}\"`).to.eql(source.releaseDate);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'duration' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('duration');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.duration, `\"duration\" field must be %{source.duration}`).to.eql(source.duration);    \r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        film = rnd.getFilm();\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    pm.request.body.update({\r",[m
+[32m+[m									[32m"        mode: 'raw',\r",[m
+[32m+[m									[32m"        raw: JSON.stringify(film),\r",[m
+[32m+[m									[32m"        options: { raw: { language: 'json' } }\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"name\": \"nisi eiusmod\",\n  \"description\": \"adipisicing\",\n  \"releaseDate\": \"1967-03-25\",\n  \"duration\": 100\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film create Fail name",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"name\": \"\",\n  \"description\": \"Description\",\n  \"releaseDate\": \"1900-03-25\",\n  \"duration\": 200\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film create Fail description",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"name\": \"Film name\",\n  \"description\": \"Пятеро друзей ( комик-группа «Шарло»), приезжают в город Бризуль. Здесь они хотят разыскать господина Огюста Куглова, который задолжал им деньги, а именно 20 миллионов. о Куглов, который за время «своего отсутствия», стал кандидатом Коломбани.\",\n    \"releaseDate\": \"1900-03-25\",\n  \"duration\": 200\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film create Fail releaseDate",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"name\": \"Name\",\n  \"description\": \"Description\",\n  \"releaseDate\": \"1890-03-25\",\n  \"duration\": 200\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film create Fail duration",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 400\", function () {\r",[m
+[32m+[m									[32m"     pm.expect(pm.response.code).to.be.equal(400);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "POST",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "{\n  \"name\": \"Name\",\n  \"description\": \"Descrition\",\n  \"releaseDate\": \"1980-03-25\",\n  \"duration\": -200\n}",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film update",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const source = pm.collectionVariables.get(\"film\")\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.ok;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has film update response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'id' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('id');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.id, `\"id\" must be ${source.id}`).to.eql(source.id);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'name' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('name');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.name, '\"name\" must be \"Film Updated\"').to.eql('Film Updated');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'description' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('description');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.description, '\"description\" must be \"New film update decription\"').to.eql('New film update decription');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'releaseDate' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('releaseDate');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.releaseDate, '\"releaseDate\" field must be \"1989-04-17\"').to.eql('1989-04-17');\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film 'duration' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData).to.have.property('duration');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData.duration, '\"duration\" field must be 190').to.eql(190);    \r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film\", film);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    pm.request.body.update({\r",[m
+[32m+[m									[32m"        mode: 'raw',\r",[m
+[32m+[m									[32m"        raw: JSON.stringify({\r",[m
+[32m+[m									[32m"            \"id\": film.id,\r",[m
+[32m+[m									[32m"            \"name\": \"Film Updated\",\r",[m
+[32m+[m									[32m"            \"releaseDate\": \"1989-04-17\",\r",[m
+[32m+[m									[32m"            \"description\": \"New film update decription\",\r",[m
+[32m+[m									[32m"            \"duration\": 190,\r",[m
+[32m+[m									[32m"            \"rate\": 4\r",[m
+[32m+[m									[32m"            }),\r",[m
+[32m+[m									[32m"        options: { raw: { language: 'json' } }\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film update unknown",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film\", film);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    pm.request.body.update({\r",[m
+[32m+[m									[32m"        mode: 'raw',\r",[m
+[32m+[m									[32m"        raw: JSON.stringify({\r",[m
+[32m+[m									[32m"            \"id\": film.id+1,\r",[m
+[32m+[m									[32m"            \"name\": \"Film Updated\",\r",[m
+[32m+[m									[32m"            \"releaseDate\": \"1989-04-17\",\r",[m
+[32m+[m									[32m"            \"description\": \"New film update decription\",\r",[m
+[32m+[m									[32m"            \"duration\": 190,\r",[m
+[32m+[m									[32m"            \"rate\": 4\r",[m
+[32m+[m									[32m"            }),\r",[m
+[32m+[m									[32m"        options: { raw: { language: 'json' } }\r",[m
+[32m+[m									[32m"    });\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film get All",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.ok;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test list film response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test film[0] 'id' field\", function () {\r",[m
+[32m+[m									[32m"    var jsonData = pm.response.json();\r",[m
+[32m+[m									[32m"    pm.expect(jsonData[0]).to.have.property('id');\r",[m
+[32m+[m									[32m"    pm.expect(jsonData[0].id, '\"id\" must be 1').to.eql(1);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "GET",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Film get Popular",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const film1_id = pm.collectionVariables.get(\"film1_id\");\r",[m
+[32m+[m									[32m"const film2_id = pm.collectionVariables.get(\"film2_id\");\r",[m
+[32m+[m									[32m"const film3_id = pm.collectionVariables.get(\"film3_id\");\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.ok;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Test list popular film response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const index1 = pm.response.json().findIndex(x => x.id == film1_id);\r",[m
+[32m+[m									[32m"const index2 = pm.response.json().findIndex(x => x.id == film2_id);\r",[m
+[32m+[m									[32m"const index3 = pm.response.json().findIndex(x => x.id == film3_id);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.test(\"Test films сonsistency\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(index1).to.be.above(index2);\r",[m
+[32m+[m									[32m"    pm.expect(index1).to.be.above(index3);\r",[m
+[32m+[m									[32m"    pm.expect(index3).to.be.above(index2);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user1, user2, user3, film1, film2, film3;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user1 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user2 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        user3 = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film1 = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        film2 = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        film3 = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        await api.addLike(film2.id, user1.id);\r",[m
+[32m+[m									[32m"        await api.addLike(film2.id, user2.id);\r",[m
+[32m+[m									[32m"        await api.addLike(film2.id, user3.id);\r",[m
+[32m+[m									[32m"        await api.addLike(film3.id, user1.id);\r",[m
+[32m+[m									[32m"        await api.addLike(film3.id, user2.id);\r",[m
+[32m+[m									[32m"        await api.addLike(film1.id, user1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film1_id\", film1.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film2_id\", film2.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film3_id\", film3.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "GET",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/popular?count=1000",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"popular"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"query": [[m
+[32m+[m								[32m{[m
+[32m+[m									[32m"key": "count",[m
+[32m+[m									[32m"value": "1000"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m}[m
+[32m+[m			[32m][m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"name": "like",[m
+[32m+[m			[32m"item": [[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Add like",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"pm.sendRequest({\r",[m
+[32m+[m									[32m"    url : \"http://localhost:8080/films/\" + 45,\r",[m
+[32m+[m									[32m"    method : \"GET\",\r",[m
+[32m+[m									[32m"    header: { \"Content-Type\": \"application/json\" }\r",[m
+[32m+[m									[32m"}, (error, response) => {\r",[m
+[32m+[m									[32m"    console.log(response.json())\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user, film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film_id\", film.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/{{film_id}}/like/{{id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"{{film_id}}",[m
+[32m+[m								[32m"like",[m
+[32m+[m								[32m"{{id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Add like unknown film",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user, film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film_id\", film.id+1);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/{{film_id}}/like/{{id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"{{film_id}}",[m
+[32m+[m								[32m"like",[m
+[32m+[m								[32m"{{id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Add like unknown user",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user, film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id+1);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film_id\", film.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "PUT",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/{{film_id}}/like/{{id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"{{film_id}}",[m
+[32m+[m								[32m"like",[m
+[32m+[m								[32m"{{id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Remove like",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 200\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.oneOf([200,204]);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user, film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        await api.addLike(film.id, user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film_id\", film.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/{{film_id}}/like/{{id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"{{film_id}}",[m
+[32m+[m								[32m"like",[m
+[32m+[m								[32m"{{id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Remove like unknown film",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user, film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        await api.addLike(film.id, user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film_id\", film.id+1);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/{{film_id}}/like/{{id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"{{film_id}}",[m
+[32m+[m								[32m"like",[m
+[32m+[m								[32m"{{id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m},[m
+[32m+[m				[32m{[m
+[32m+[m					[32m"name": "Remove like unknown user",[m
+[32m+[m					[32m"event": [[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "test",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"pm.test(\"Status code is 404\", function () {\r",[m
+[32m+[m									[32m"    pm.expect(pm.response.code).to.be.equal(404);\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m"pm.test(\"Has error response\", function () {\r",[m
+[32m+[m									[32m"    pm.response.to.be.withBody;\r",[m
+[32m+[m									[32m"    pm.response.to.be.json;\r",[m
+[32m+[m									[32m"});\r",[m
+[32m+[m									[32m""[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m{[m
+[32m+[m							[32m"listen": "prerequest",[m
+[32m+[m							[32m"script": {[m
+[32m+[m								[32m"exec": [[m
+[32m+[m									[32m"const main = async () => {\r",[m
+[32m+[m									[32m"    const api = new API(pm);\r",[m
+[32m+[m									[32m"    const rnd = new RandomUtils();\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"    let user, film;\r",[m
+[32m+[m									[32m"    try {\r",[m
+[32m+[m									[32m"        user = await api.addUser(rnd.getUser());\r",[m
+[32m+[m									[32m"        film = await api.addFilm(rnd.getFilm());\r",[m
+[32m+[m									[32m"        await api.addLike(film.id, user.id);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"id\", user.id+1);\r",[m
+[32m+[m									[32m"        pm.collectionVariables.set(\"film_id\", film.id);\r",[m
+[32m+[m									[32m"    } catch(err) {\r",[m
+[32m+[m									[32m"        console.error(\"Ошибка при подготовке тестовых данных.\", err);\r",[m
+[32m+[m									[32m"    }\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"};\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"const interval = setInterval(() => {}, 1000);\r",[m
+[32m+[m									[32m"\r",[m
+[32m+[m									[32m"setTimeout(async () => \r",[m
+[32m+[m									[32m"    {\r",[m
+[32m+[m									[32m"        try {\r",[m
+[32m+[m									[32m"            await main();\r",[m
+[32m+[m									[32m"        } catch (e) {\r",[m
+[32m+[m									[32m"            console.error(e);\r",[m
+[32m+[m									[32m"        } finally {\r",[m
+[32m+[m									[32m"            clearInterval(interval);\r",[m
+[32m+[m									[32m"        }\r",[m
+[32m+[m									[32m"    },  \r",[m
+[32m+[m									[32m"    100 \r",[m
+[32m+[m									[32m");"[m
+[32m+[m								[32m],[m
+[32m+[m								[32m"type": "text/javascript",[m
+[32m+[m								[32m"packages": {}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m					[32m],[m
+[32m+[m					[32m"request": {[m
+[32m+[m						[32m"method": "DELETE",[m
+[32m+[m						[32m"header": [[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Content-Type",[m
+[32m+[m								[32m"value": "application/json"[m
+[32m+[m							[32m},[m
+[32m+[m							[32m{[m
+[32m+[m								[32m"key": "Accept",[m
+[32m+[m								[32m"value": "*/*"[m
+[32m+[m							[32m}[m
+[32m+[m						[32m],[m
+[32m+[m						[32m"body": {[m
+[32m+[m							[32m"mode": "raw",[m
+[32m+[m							[32m"raw": "",[m
+[32m+[m							[32m"options": {[m
+[32m+[m								[32m"raw": {[m
+[32m+[m									[32m"language": "json"[m
+[32m+[m								[32m}[m
+[32m+[m							[32m}[m
+[32m+[m						[32m},[m
+[32m+[m						[32m"url": {[m
+[32m+[m							[32m"raw": "{{baseUrl}}/films/{{film_id}}/like/{{id}}",[m
+[32m+[m							[32m"host": [[m
+[32m+[m								[32m"{{baseUrl}}"[m
+[32m+[m							[32m],[m
+[32m+[m							[32m"path": [[m
+[32m+[m								[32m"films",[m
+[32m+[m								[32m"{{film_id}}",[m
+[32m+[m								[32m"like",[m
+[32m+[m								[32m"{{id}}"[m
+[32m+[m							[32m][m
+[32m+[m						[32m}[m
+[32m+[m					[32m},[m
+[32m+[m					[32m"response": [][m
+[32m+[m				[32m}[m
+[32m+[m			[32m][m
+[32m+[m		[32m}[m
+[32m+[m	[32m],[m
+[32m+[m	[32m"event": [[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"listen": "prerequest",[m
+[32m+[m			[32m"script": {[m
+[32m+[m				[32m"type": "text/javascript",[m
+[32m+[m				[32m"exec": [[m
+[32m+[m					[32m"API = class {",[m
+[32m+[m					[32m"    constructor(postman, verbose = false, baseUrl = \"http://localhost:8080\") {",[m
+[32m+[m					[32m"        this.baseUrl = baseUrl;",[m
+[32m+[m					[32m"        this.pm = postman;",[m
+[32m+[m					[32m"        this._verbose = verbose;",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async addUser(user, verbose=null) {",[m
+[32m+[m					[32m"        return this.post(\"/users\", user, \"Ошибка при добавлении нового пользователя: \", verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async addFilm(film, verbose=null) {",[m
+[32m+[m					[32m"        return this.post(\"/films\", film, \"Ошибка при добавлении нового фильма: \", verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async addFriend(userId, friendId, verbose=null) {",[m
+[32m+[m					[32m"        return this.put(\"/users/\" + userId + '/friends/' + friendId, null, \"Ошибка при добавлении нового фильма: \", verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async addLike(filmId, userId, verbose=null) {",[m
+[32m+[m					[32m"        return this.put(\"/films/\" + filmId + '/like/' + userId, null, \"Ошибка при добавлении лайка на фильм: \", verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async getFriends(userId, verbose=null) {",[m
+[32m+[m					[32m"        return this.get('/users/' + userId + '/friends', null, \"Ошибка при поиске друзей по id пользователя\", verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async post(path, body, errorText = \"Ошибка при выполнении post-запроса: \", verbose=null) {",[m
+[32m+[m					[32m"        return this.sendRequest(\"POST\", path, body, errorText, verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async patch(path, body = null, errorText = \"Ошибка при выполнении patch-запроса: \", verbose=null) {",[m
+[32m+[m					[32m"        return this.sendRequest(\"PATCH\", path, body, errorText, verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async get(path, body = null, errorText = \"Ошибка при выполнении get-запроса: \", verbose=null) {",[m
+[32m+[m					[32m"        return this.sendRequest(\"GET\", path, body, errorText, verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async put(path, body = null, errorText = \"Ошибка при выполнении put-запроса: \", verbose=null) {",[m
+[32m+[m					[32m"        return this.sendRequest(\"PUT\", path, body, errorText, verbose);",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    async sendRequest(method, path, body=null, errorText = \"Ошибка при выполнении запроса: \", verbose=null) {",[m
+[32m+[m					[32m"        return new Promise((resolve, reject) => {",[m
+[32m+[m					[32m"            verbose = verbose == null ? this._verbose : verbose;",[m
+[32m+[m					[32m"            const request = {",[m
+[32m+[m					[32m"                url: this.baseUrl + path,",[m
+[32m+[m					[32m"                method: method,",[m
+[32m+[m					[32m"                body: body == null ? \"\" : JSON.stringify(body),",[m
+[32m+[m					[32m"                header: { \"Content-Type\": \"application/json\" },",[m
+[32m+[m					[32m"            };",[m
+[32m+[m					[32m"            if(verbose) {",[m
+[32m+[m					[32m"                console.log(\"Отправляю запрос: \", request);",[m
+[32m+[m					[32m"            }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"            try {",[m
+[32m+[m					[32m"                this.pm.sendRequest(request, (error, response) => {",[m
+[32m+[m					[32m"                    if(error || (response.code >= 400 && response.code <= 599)) {",[m
+[32m+[m					[32m"                        let err = error ? error : JSON.stringify(response.json());",[m
+[32m+[m					[32m"                        console.error(\"При выполнении запроса к серверу возникла ошика.\\n\", err,",[m
+[32m+[m					[32m"                             \"\\nДля отладки проблемы повторите такой же запрос к вашей программе \" + ",[m
+[32m+[m					[32m"                             \"на локальном компьютере. Данные запроса:\\n\", JSON.stringify(request));",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"                        reject(new Error(errorText + err));",[m
+[32m+[m					[32m"                    }",[m
+[32m+[m					[32m"                    if(verbose) {",[m
+[32m+[m					[32m"                        console.log(\"Результат обработки запроса: код состояния - \", response.code, \", тело: \", response.json());",[m
+[32m+[m					[32m"                    }",[m
+[32m+[m					[32m"                    if (response.stream.length === 0){",[m
+[32m+[m					[32m"                        resolve(null);",[m
+[32m+[m					[32m"                    }else{",[m
+[32m+[m					[32m"                        resolve(response.json());",[m
+[32m+[m					[32m"                    }",[m
+[32m+[m					[32m"                });",[m
+[32m+[m					[32m"                ",[m
+[32m+[m					[32m"            } catch(err) {",[m
+[32m+[m					[32m"                if(verbose) {",[m
+[32m+[m					[32m"                    console.error(errorText, err);",[m
+[32m+[m					[32m"                }",[m
+[32m+[m					[32m"                return Promise.reject(err);",[m
+[32m+[m					[32m"            }",[m
+[32m+[m					[32m"        });",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"};",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"RandomUtils = class {",[m
+[32m+[m					[32m"    constructor() {}",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    getUser() {",[m
+[32m+[m					[32m"        let date = new Date(new Date(1960, 0, 1).getTime() + Math.random() * (new Date(2010, 0, 1).getTime() - new Date(1960, 0, 1).getTime()));",[m
+[32m+[m					[32m"        return {",[m
+[32m+[m					[32m"            name: pm.variables.replaceIn('{{$randomFullName}}'),",[m
+[32m+[m					[32m"            login: this.getWord(10),",[m
+[32m+[m					[32m"            email: pm.variables.replaceIn('{{$randomEmail}}'),",[m
+[32m+[m					[32m"            birthday: date.toISOString().slice(0,10)",[m
+[32m+[m					[32m"        };",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    getFilm() {",[m
+[32m+[m					[32m"        let date = new Date(new Date(1960, 0, 1).getTime() + Math.random() * (new Date(2010, 0, 1).getTime() - new Date(1960, 0, 1).getTime()));",[m
+[32m+[m					[32m"        return {",[m
+[32m+[m					[32m"            name: this.getWord(15),",[m
+[32m+[m					[32m"            description: this.getWord(50),",[m
+[32m+[m					[32m"            releaseDate: date.toISOString().slice(0,10),",[m
+[32m+[m					[32m"            duration: Math.floor(Math.random() * (180 - 60 + 1) + 60)",[m
+[32m+[m					[32m"        };",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"    getWord(length = 1) {",[m
+[32m+[m					[32m"        let result = '';",[m
+[32m+[m					[32m"        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",[m
+[32m+[m					[32m"        const charactersLength = characters.length;",[m
+[32m+[m					[32m"        let counter = 0;",[m
+[32m+[m					[32m"        while (counter < length) {",[m
+[32m+[m					[32m"            result += characters.charAt(Math.floor(Math.random() * charactersLength));",[m
+[32m+[m					[32m"            counter += 1;",[m
+[32m+[m					[32m"        }",[m
+[32m+[m					[32m"        return result;",[m
+[32m+[m					[32m"    }",[m
+[32m+[m					[32m"",[m
+[32m+[m					[32m"}"[m
+[32m+[m				[32m][m
+[32m+[m			[32m}[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"listen": "test",[m
+[32m+[m			[32m"script": {[m
+[32m+[m				[32m"type": "text/javascript",[m
+[32m+[m				[32m"exec": [[m
+[32m+[m					[32m""[m
+[32m+[m				[32m][m
+[32m+[m			[32m}[m
+[32m+[m		[32m}[m
+[32m+[m	[32m],[m
+[32m+[m	[32m"variable": [[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "baseUrl",[m
+[32m+[m			[32m"value": "http://localhost:8080",[m
+[32m+[m			[32m"type": "string"[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "id",[m
+[32m+[m			[32m"value": "0"[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "friend_id",[m
+[32m+[m			[32m"value": "0"[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "user_friends",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "is",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "user3_id",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "film1_id",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "film2_id",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "film3_id",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "film_id",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "user",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m},[m
+[32m+[m		[32m{[m
+[32m+[m			[32m"key": "film",[m
+[32m+[m			[32m"value": ""[m
+[32m+[m		[32m}[m
+[32m+[m	[32m][m
+[32m+[m[32m}[m
+[1mdiff --git a/src/test/java/ru/yandex/practicum/filmorate/storage/film/InMemoryFilmStorageTest.java b/src/test/java/ru/yandex/practicum/filmorate/storage/film/InMemoryFilmStorageTest.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..78e43b4[m
+[1m--- /dev/null[m
+[1m+++ b/src/test/java/ru/yandex/practicum/filmorate/storage/film/InMemoryFilmStorageTest.java[m
+[36m@@ -0,0 +1,79 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.storage.film;[m
+[32m+[m
+[32m+[m[32mimport org.junit.jupiter.api.BeforeEach;[m
+[32m+[m[32mimport org.junit.jupiter.api.Test;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.Film;[m
+[32m+[m
+[32m+[m[32mimport java.time.LocalDate;[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32mimport static org.junit.jupiter.api.Assertions.assertEquals;[m
+[32m+[m
+[32m+[m[32mclass InMemoryFilmStorageTest {[m
+[32m+[m[32m    private InMemoryFilmStorage storage;[m
+[32m+[m[32m    private Film film1;[m
+[32m+[m[32m    private Film film2;[m
+[32m+[m
+[32m+[m[32m    @BeforeEach[m
+[32m+[m[32m    void setUp() {[m
+[32m+[m[32m        storage = new InMemoryFilmStorage();[m
+[32m+[m
+[32m+[m[32m        film1 = new Film();[m
+[32m+[m[32m        film1.setName("Film 1");[m
+[32m+[m[32m        film1.setDescription("Description 1");[m
+[32m+[m[32m        film1.setReleaseDate(LocalDate.of(2000, 1, 1));[m
+[32m+[m[32m        film1.setDuration(120);[m
+[32m+[m
+[32m+[m[32m        film2 = new Film();[m
+[32m+[m[32m        film2.setName("Film 2");[m
+[32m+[m[32m        film2.setDescription("Description 2");[m
+[32m+[m[32m        film2.setReleaseDate(LocalDate.of(2005, 5, 5));[m
+[32m+[m[32m        film2.setDuration(90);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void addLike() {[m
+[32m+[m[32m        Film addedFilm = storage.addFilm(film1);[m
+[32m+[m[32m        storage.addLike(addedFilm.getId(), 1);[m
+[32m+[m
+[32m+[m[32m        List<Film> popularFilms = storage.getPopularFilms(1);[m
+[32m+[m[32m        assertEquals(1, popularFilms.size());[m
+[32m+[m[32m        assertEquals(addedFilm.getId(), popularFilms.get(0).getId());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void removeLike() {[m
+[32m+[m[32m        Film addedFilm = storage.addFilm(film1);[m
+[32m+[m[32m        storage.addLike(addedFilm.getId(), 1);[m
+[32m+[m[32m        storage.removeLike(addedFilm.getId(), 1);[m
+[32m+[m
+[32m+[m[32m        List<Film> popularFilms = storage.getPopularFilms(1);[m
+[32m+[m[32m        assertEquals(1, popularFilms.size()); // Фильм остается, но без лайков[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getPopularFilms() {[m
+[32m+[m[32m        Film film1 = storage.addFilm(this.film1);[m
+[32m+[m[32m        Film film2 = storage.addFilm(this.film2);[m
+[32m+[m
+[32m+[m[32m        storage.addLike(film1.getId(), 1);[m
+[32m+[m[32m        storage.addLike(film1.getId(), 2);[m
+[32m+[m[32m        storage.addLike(film2.getId(), 1);[m
+[32m+[m
+[32m+[m[32m        List<Film> popularFilms = storage.getPopularFilms(2);[m
+[32m+[m[32m        assertEquals(film1.getId(), popularFilms.get(0).getId());[m
+[32m+[m[32m        assertEquals(film2.getId(), popularFilms.get(1).getId());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getPopularFilmsWithEqualLikes() {[m
+[32m+[m[32m        Film film1 = storage.addFilm(this.film1);[m
+[32m+[m[32m        Film film2 = storage.addFilm(this.film2);[m
+[32m+[m
+[32m+[m[32m        storage.addLike(film1.getId(), 1);[m
+[32m+[m[32m        storage.addLike(film2.getId(), 2);[m
+[32m+[m
+[32m+[m[32m        List<Film> popularFilms = storage.getPopularFilms(2);[m
+[32m+[m[32m        assertEquals(2, popularFilms.size());[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/test/java/ru/yandex/practicum/filmorate/storage/user/InMemoryUserStorageTest.java b/src/test/java/ru/yandex/practicum/filmorate/storage/user/InMemoryUserStorageTest.java[m
+[1mnew file mode 100644[m
+[1mindex 0000000..66e9ada[m
+[1m--- /dev/null[m
+[1m+++ b/src/test/java/ru/yandex/practicum/filmorate/storage/user/InMemoryUserStorageTest.java[m
+[36m@@ -0,0 +1,136 @@[m
+[32m+[m[32mpackage ru.yandex.practicum.filmorate.storage.user;[m
+[32m+[m
+[32m+[m[32mimport org.junit.jupiter.api.BeforeEach;[m
+[32m+[m[32mimport org.junit.jupiter.api.Test;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.exception.NotFoundException;[m
+[32m+[m[32mimport ru.yandex.practicum.filmorate.model.User;[m
+[32m+[m
+[32m+[m[32mimport java.time.LocalDate;[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32mimport static org.junit.jupiter.api.Assertions.assertEquals;[m
+[32m+[m[32mimport static org.junit.jupiter.api.Assertions.assertNotNull;[m
+[32m+[m[32mimport static org.junit.jupiter.api.Assertions.assertThrows;[m
+[32m+[m[32mimport static org.junit.jupiter.api.Assertions.assertTrue;[m
+[32m+[m
+[32m+[m[32mclass InMemoryUserStorageTest {[m
+[32m+[m[32m    private InMemoryUserStorage storage;[m
+[32m+[m[32m    private User user1;[m
+[32m+[m[32m    private User user2;[m
+[32m+[m
+[32m+[m[32m    @BeforeEach[m
+[32m+[m[32m    void setUp() {[m
+[32m+[m[32m        storage = new InMemoryUserStorage();[m
+[32m+[m
+[32m+[m[32m        user1 = new User();[m
+[32m+[m[32m        user1.setEmail("user1@mail.com");[m
+[32m+[m[32m        user1.setLogin("user1");[m
+[32m+[m[32m        user1.setBirthday(LocalDate.of(1990, 1, 1));[m
+[32m+[m
+[32m+[m[32m        user2 = new User();[m
+[32m+[m[32m        user2.setEmail("user2@mail.com");[m
+[32m+[m[32m        user2.setLogin("user2");[m
+[32m+[m[32m        user2.setBirthday(LocalDate.of(1995, 5, 5));[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void addUser() {[m
+[32m+[m[32m        User addedUser = storage.addUser(user1);[m
+[32m+[m
+[32m+[m[32m        assertNotNull(addedUser.getId());[m
+[32m+[m[32m        assertEquals(1, addedUser.getId());[m
+[32m+[m[32m        assertEquals(1, storage.getAllUsers().size());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void addMultipleUsers() {[m
+[32m+[m[32m        User addedUser1 = storage.addUser(user1);[m
+[32m+[m[32m        User addedUser2 = storage.addUser(user2);[m
+[32m+[m
+[32m+[m[32m        assertEquals(1, addedUser1.getId());[m
+[32m+[m[32m        assertEquals(2, addedUser2.getId());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void updateUser() {[m
+[32m+[m[32m        User addedUser = storage.addUser(user1);[m
+[32m+[m[32m        addedUser.setName("Updated Name");[m
+[32m+[m
+[32m+[m[32m        User updatedUser = storage.updateUser(addedUser);[m
+[32m+[m
+[32m+[m[32m        assertEquals("Updated Name", updatedUser.getName());[m
+[32m+[m[32m        assertEquals(1, storage.getAllUsers().size());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void updateWhenUserNotFound() {[m
+[32m+[m[32m        user1.setId(999);[m
+[32m+[m
+[32m+[m[32m        assertThrows(NotFoundException.class, () -> storage.updateUser(user1));[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getWhenUserNotFound() {[m
+[32m+[m[32m        assertThrows(NotFoundException.class, () -> storage.getUser(999));[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getAllUsers() {[m
+[32m+[m[32m        assertTrue(storage.getAllUsers().isEmpty());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void addFriend() {[m
+[32m+[m[32m        User addedUser1 = storage.addUser(user1);[m
+[32m+[m[32m        User addedUser2 = storage.addUser(user2);[m
+[32m+[m
+[32m+[m[32m        storage.addFriend(addedUser1.getId(), addedUser2.getId());[m
+[32m+[m
+[32m+[m[32m        List<User> friends = storage.getFriends(addedUser1.getId());[m
+[32m+[m[32m        assertEquals(1, friends.size());[m
+[32m+[m[32m        assertEquals(addedUser2.getId(), friends.get(0).getId());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void addWhenAlreadyFriends() {[m
+[32m+[m[32m        User addedUser1 = storage.addUser(user1);[m
+[32m+[m[32m        User addedUser2 = storage.addUser(user2);[m
+[32m+[m
+[32m+[m[32m        storage.addFriend(addedUser1.getId(), addedUser2.getId());[m
+[32m+[m[32m        storage.addFriend(addedUser1.getId(), addedUser2.getId()); // повторное добавление[m
+[32m+[m
+[32m+[m[32m        assertEquals(1, storage.getFriends(addedUser1.getId()).size());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void removeFriend() {[m
+[32m+[m[32m        User addedUser1 = storage.addUser(user1);[m
+[32m+[m[32m        User addedUser2 = storage.addUser(user2);[m
+[32m+[m
+[32m+[m[32m        storage.removeFriend(addedUser1.getId(), addedUser2.getId());[m
+[32m+[m
+[32m+[m[32m        assertEquals(0, storage.getFriends(addedUser1.getId()).size());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getFriends() {[m
+[32m+[m[32m        User addedUser = storage.addUser(user1);[m
+[32m+[m
+[32m+[m[32m        assertTrue(storage.getFriends(addedUser.getId()).isEmpty());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getCommonFriends() {[m
+[32m+[m[32m        User addedUser1 = storage.addUser(user1);[m
+[32m+[m[32m        User addedUser2 = storage.addUser(user2);[m
+[32m+[m
+[32m+[m[32m        assertTrue(storage.getCommonFriends(addedUser1.getId(), addedUser2.getId()).isEmpty());[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Test[m
+[32m+[m[32m    void getSameUserCommonFriends() {[m
+[32m+[m[32m        User addedUser = storage.addUser(user1);[m
+[32m+[m
+[32m+[m[32m        assertTrue(storage.getCommonFriends(addedUser.getId(), addedUser.getId()).isEmpty());[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
