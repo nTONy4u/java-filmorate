@@ -1,57 +1,72 @@
 package ru.yandex.practicum.filmorate.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.data.dao.UserDao;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.List;
 
 @Service
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserDao userDao;
 
-    @Autowired
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
+    public UserService(@Qualifier("UserDao") UserDao userDao) {
+        this.userDao = userDao;
     }
 
     public User addUser(User user) {
         validateUser(user);
-        return userStorage.addUser(user);
+        return userDao.addUser(user);
     }
 
     public User updateUser(User user) {
         validateUser(user);
-        return userStorage.updateUser(user);
+        return userDao.updateUser(user);
     }
 
     public User getUser(long id) {
-        return userStorage.getUser(id);
+        return userDao.getUser(id);
     }
 
     public List<User> getAllUsers() {
-        return userStorage.getAllUsers();
+        return userDao.getAllUsers();
     }
 
     public void addFriend(long userId, long friendId) {
         if (userId == friendId) {
             throw new ValidationException("Пользователь не может добавить себя в друзья");
         }
-        userStorage.addFriend(userId, friendId);
+        userDao.addFriend(userId, friendId);
+    }
+
+    public void confirmFriend(long userId, long friendId) {
+        userDao.confirmFriend(userId, friendId);
     }
 
     public void removeFriend(long userId, long friendId) {
-        userStorage.removeFriend(userId, friendId);
+        getUser(userId);
+        getUser(friendId);
+        if (!userDao.userExists(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+        if (!userDao.userExists(friendId)) {
+            throw new NotFoundException("Пользователь с id=" + friendId + " не найден");
+        }
+        userDao.removeFriend(userId, friendId);
     }
 
     public List<User> getFriends(long userId) {
-        return userStorage.getFriends(userId);
+        if (!userDao.userExists(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+        return userDao.getFriends(userId);
     }
 
     public List<User> getCommonFriends(long userId, long otherId) {
-        return userStorage.getCommonFriends(userId, otherId);
+        return userDao.getCommonFriends(userId, otherId);
     }
 
     private void validateUser(User user) {
