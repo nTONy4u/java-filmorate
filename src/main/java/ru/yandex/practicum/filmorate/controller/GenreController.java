@@ -5,9 +5,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.yandex.practicum.filmorate.data.dao.GenreDao;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.service.GenreService;
 
 import java.util.List;
 
@@ -15,16 +14,15 @@ import java.util.List;
 @RequestMapping("/genres")
 @RequiredArgsConstructor
 public class GenreController {
-    private final GenreDao genreDao;
+    private final GenreService genreService;
 
     @GetMapping
     public List<Genre> getAllGenres() {
-        return genreDao.getAllGenres();
+        return genreService.getAllGenres();
     }
 
     @GetMapping("/{id}")
     public Genre getGenreById(@PathVariable("id") int genreId) {
-        return genreDao.getGenreById(genreId)
-                .orElseThrow(() -> new NotFoundException("Жанр с id=" + genreId + " не найден"));
+        return genreService.getGenreById(genreId);
     }
 }

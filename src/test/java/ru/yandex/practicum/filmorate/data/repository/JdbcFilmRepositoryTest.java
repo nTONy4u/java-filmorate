@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({JdbcFilmRepository.class, JdbcUserRepository.class, JdbcGenreRepository.class, JdbcMpaRepository.class})
+@Import({JdbcFilmRepository.class, JdbcUserRepository.class, JdbcMpaRepository.class})
 class JdbcFilmRepositoryTest {
 
     @Autowired

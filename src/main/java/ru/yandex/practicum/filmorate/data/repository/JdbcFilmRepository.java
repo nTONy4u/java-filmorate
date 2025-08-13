@@ -7,30 +7,26 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.data.dao.FilmDao;
-import ru.yandex.practicum.filmorate.data.dao.GenreDao;
 import ru.yandex.practicum.filmorate.data.dao.MpaDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Repository("FilmDao")
 public class JdbcFilmRepository implements FilmDao {
     private final JdbcTemplate jdbcTemplate;
-    private final GenreDao genreDao;
     private final MpaDao mpaDao;
 
     @Autowired
-    public JdbcFilmRepository(JdbcTemplate jdbcTemplate, GenreDao genreDao, MpaDao mpaDao) {
+    public JdbcFilmRepository(JdbcTemplate jdbcTemplate, MpaDao mpaDao) {
         this.jdbcTemplate = jdbcTemplate;
-        this.genreDao = genreDao;
         this.mpaDao = mpaDao;
     }
 
@@ -143,8 +139,7 @@ public class JdbcFilmRepository implements FilmDao {
         int mpaId = rs.getInt("mpa_id");
         film.setMpa(mpaDao.getMpaById(mpaId));
 
-        Set<Genre> genres = genreDao.getGenresByFilmId(film.getId());
-        film.setGenres(genres);
+        film.setGenres(new HashSet<>());
 
         String likesSql = "SELECT user_id FROM likes WHERE film_id = ?";
         List<Long> likes = jdbcTemplate.queryForList(likesSql, Long.class, film.getId());

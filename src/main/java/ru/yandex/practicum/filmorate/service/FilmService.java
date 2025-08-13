@@ -4,8 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.data.dao.FilmDao;
-import ru.yandex.practicum.filmorate.data.dao.GenreDao;
-import ru.yandex.practicum.filmorate.data.dao.MpaDao;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -19,33 +17,36 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmDao filmDao;
     private final UserService userService;
-    private final GenreDao genreDao;
-    private final MpaDao mpaDao;
+    private final GenreService genreService;
+    private final MpaService mpaService;
 
     @Autowired
     public FilmService(
             @Qualifier("FilmDao") FilmDao filmDao,
             UserService userService,
-            @Qualifier("GenreDao") GenreDao genreDao,
-            @Qualifier("MpaDao") MpaDao mpaDao) {
+            GenreService genreService,
+            MpaService mpaService) {
         this.filmDao = filmDao;
         this.userService = userService;
-        this.genreDao = genreDao;
-        this.mpaDao = mpaDao;
+        this.genreService = genreService;
+        this.mpaService = mpaService;
     }
 
     public Film addFilm(Film film) {
         validateFilm(film);
         try {
-            mpaDao.getMpaById(film.getMpa().getId());
+            mpaService.getMpaById(film.getMpa().getId());
         } catch (NotFoundException e) {
             throw new NotFoundException("MPA рейтинг с id=" + film.getMpa().getId() + " не найден");
         }
 
         if (film.getGenres() != null) {
             for (Genre genre : film.getGenres()) {
-                genreDao.getGenreById((int) genre.getId())
-                        .orElseThrow(() -> new NotFoundException("Жанр с id=" + genre.getId() + " не найден"));
+                try {
+                    genreService.getGenreById((int) genre.getId());
+                } catch (NotFoundException e) {
+                    throw new NotFoundException("Жанр с id=" + genre.getId() + " не найден");
+                }
             }
         }
 
@@ -58,11 +59,19 @@ public class FilmService {
     }
 
     public Film getFilm(long id) {
-        return filmDao.getFilm(id);
+        Film film = filmDao.getFilm(id);
+        Set<Genre> genres = genreService.getGenresByFilmId(id);
+        film.setGenres(genres);
+        return film;
     }
 
     public List<Film> getAllFilms() {
-        return filmDao.getAllFilms();
+        List<Film> films = filmDao.getAllFilms();
+        films.forEach(film -> {
+            Set<Genre> genres = genreService.getGenresByFilmId(film.getId());
+            film.setGenres(genres);
+        });
+        return films;
     }
 
     public void addLike(long filmId, long userId) {
@@ -80,12 +89,11 @@ public class FilmService {
     }
 
     public Genre getGenreById(int genreId) {
-        return genreDao.getGenreById(genreId)
-                .orElseThrow(() -> new NotFoundException("Жанр с id=" + genreId + " не найден"));
+        return genreService.getGenreById(genreId);
     }
 
     public List<Genre> getAllGenres() {
-        return genreDao.getAllGenres();
+        return genreService.getAllGenres();
     }
 
     private void validateFilm(Film film) {
@@ -93,7 +101,7 @@ public class FilmService {
             throw new NotFoundException("MPA рейтинг не указан");
         }
         try {
-            mpaDao.getMpaById(film.getMpa().getId());
+            mpaService.getMpaById(film.getMpa().getId());
         } catch (NotFoundException e) {
             throw new NotFoundException("MPA рейтинг с id=" + film.getMpa().getId() + " не найден");
         }
@@ -103,7 +111,7 @@ public class FilmService {
                     .map(Genre::getId)
                     .collect(Collectors.toSet());
 
-            List<Genre> existingGenres = genreDao.getByIds(new ArrayList<>(genreIds));
+            List<Genre> existingGenres = genreService.getByIds(new ArrayList<>(genreIds));
             if (existingGenres.size() != genreIds.size()) {
                 Set<Long> existingIds = existingGenres.stream()
                         .map(Genre::getId)
