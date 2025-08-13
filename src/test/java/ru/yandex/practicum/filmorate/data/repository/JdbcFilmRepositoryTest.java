@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({JdbcFilmRepository.class, JdbcGenreRepository.class, JdbcMpaRepository.class, JdbcUserRepository.class})
+@Import({JdbcFilmRepository.class, JdbcUserRepository.class, JdbcGenreRepository.class, JdbcMpaRepository.class})
 class JdbcFilmRepositoryTest {
 
     @Autowired
@@ -39,10 +39,10 @@ class JdbcFilmRepositoryTest {
         return mpa;
     }
 
-    private User createTestUser() {
+    private User createTestUser(String email, String login) {
         User user = new User();
-        user.setEmail("test@mail.com");
-        user.setLogin("testlogin");
+        user.setEmail(email);
+        user.setLogin(login);
         user.setBirthday(LocalDate.of(1990, 1, 1));
         return user;
     }
@@ -51,8 +51,36 @@ class JdbcFilmRepositoryTest {
     void setUp() {
         jdbcTemplate.execute("DELETE FROM likes");
         jdbcTemplate.execute("DELETE FROM film_genres");
+        jdbcTemplate.execute("DELETE FROM friends");
         jdbcTemplate.execute("DELETE FROM films");
+        jdbcTemplate.execute("ALTER TABLE films ALTER COLUMN film_id RESTART WITH 1");
         jdbcTemplate.execute("DELETE FROM users");
+        jdbcTemplate.execute("ALTER TABLE users ALTER COLUMN user_id RESTART WITH 1");
+
+        jdbcTemplate.execute("MERGE INTO mpa_ratings (mpa_id, name, description) VALUES " +
+                "(1, 'G', 'Нет возрастных ограничений'), " +
+                "(2, 'PG', 'Рекомендуется присутствие родителей'), " +
+                "(3, 'PG-13', 'Детям до 13 лет просмотр не желателен'), " +
+                "(4, 'R', 'Лицам до 17 лет обязательно присутствие взрослого'), " +
+                "(5, 'NC-17', 'Лицам до 18 лет просмотр запрещён')");
+    }
+
+    @Test
+    void shouldAddAndRemoveLike() {
+        User user = createTestUser("test@mail.com", "testlogin");
+        User createdUser = userRepository.addUser(user);
+
+        Film film = filmRepository.addFilm(createTestFilm());
+
+        filmRepository.addLike(film.getId(), createdUser.getId());
+
+        List<Film> popular = filmRepository.getPopularFilms(1);
+        assertThat(popular).hasSize(1);
+        assertThat(popular.get(0).getLikes()).contains(createdUser.getId());
+
+        filmRepository.removeLike(film.getId(), createdUser.getId());
+        popular = filmRepository.getPopularFilms(1);
+        assertThat(popular.get(0).getLikes()).doesNotContain(createdUser.getId());
     }
 
     @Test
@@ -65,6 +93,8 @@ class JdbcFilmRepositoryTest {
         newFilm.setMpa(createMpaRating(1, "G"));
 
         Film addedFilm = filmRepository.addFilm(newFilm);
+        assertThat(addedFilm.getId()).isEqualTo(1L);
+
         Film foundFilm = filmRepository.getFilm(addedFilm.getId());
 
         assertThat(foundFilm)
@@ -106,33 +136,11 @@ class JdbcFilmRepositoryTest {
     }
 
     @Test
-    void shouldAddAndRemoveLike() {
-        User user = createTestUser();
-        User createdUser = userRepository.addUser(user);
-
-        Film film = filmRepository.addFilm(createTestFilm());
-
-        filmRepository.addLike(film.getId(), createdUser.getId());
-
-        List<Film> popular = filmRepository.getPopularFilms(1);
-        assertThat(popular).hasSize(1);
-        assertThat(popular.get(0).getLikes()).contains(createdUser.getId());
-
-        filmRepository.removeLike(film.getId(), createdUser.getId());
-        popular = filmRepository.getPopularFilms(1);
-        assertThat(popular.get(0).getLikes()).doesNotContain(createdUser.getId());
-    }
-
-    @Test
     void shouldGetPopularFilms() {
-        User user1 = createTestUser();
-        user1.setEmail("user1@mail.com");
-        user1.setLogin("user1");
+        User user1 = createTestUser("user1@mail.com", "user1");
         User createdUser1 = userRepository.addUser(user1);
 
-        User user2 = createTestUser();
-        user2.setEmail("user2@mail.com");
-        user2.setLogin("user2");
+        User user2 = createTestUser("user2@mail.com", "user2");
         User createdUser2 = userRepository.addUser(user2);
 
         Film film1 = createTestFilm();

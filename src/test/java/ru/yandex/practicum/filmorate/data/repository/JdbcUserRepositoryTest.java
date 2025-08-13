@@ -14,9 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -31,8 +29,21 @@ class JdbcUserRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.execute("DELETE FROM likes");
+        jdbcTemplate.execute("DELETE FROM film_genres");
         jdbcTemplate.execute("DELETE FROM friends");
         jdbcTemplate.execute("DELETE FROM users");
+
+        jdbcTemplate.execute("ALTER TABLE users ALTER COLUMN user_id RESTART WITH 1");
+    }
+
+    private User createTestUser(String email, String login) {
+        User user = new User();
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setName(login);
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+        return user;
     }
 
     @Test
@@ -40,39 +51,34 @@ class JdbcUserRepositoryTest {
         User newUser = createTestUser("test@mail.com", "testlogin");
         User addedUser = userRepository.addUser(newUser);
 
-        User foundUser = userRepository.getUser(addedUser.getId());
+        assertThat(addedUser.getId()).isEqualTo(1L);
 
+        User foundUser = userRepository.getUser(addedUser.getId());
         assertThat(foundUser)
                 .isNotNull()
-                .satisfies(user -> {
-                    assertThat(user.getEmail()).isEqualTo("test@mail.com");
-                    assertThat(user.getLogin()).isEqualTo("testlogin");
-                    assertThat(user.getName()).isEqualTo(newUser.getName()); // проверяем именно то имя, которое установили
-                });
+                .hasFieldOrPropertyWithValue("email", "test@mail.com")
+                .hasFieldOrPropertyWithValue("login", "testlogin");
     }
 
     @Test
     void shouldReturnNullWhenUserNotFound() {
-        User user = userRepository.getUser(999L);
-        assertThat(user).isNull();
+        assertThat(userRepository.getUser(999L)).isNull();
     }
 
     @Test
     void shouldUpdateUser() {
         User user = createTestUser("original@mail.com", "originallogin");
-        user.setName("Original Name");
         User addedUser = userRepository.addUser(user);
 
         addedUser.setEmail("updated@mail.com");
         addedUser.setName("Updated Name");
+
         User updatedUser = userRepository.updateUser(addedUser);
 
         assertThat(updatedUser)
                 .isNotNull()
-                .satisfies(u -> {
-                    assertThat(u.getEmail()).isEqualTo("updated@mail.com");
-                    assertThat(u.getName()).isEqualTo("Updated Name");
-                });
+                .hasFieldOrPropertyWithValue("email", "updated@mail.com")
+                .hasFieldOrPropertyWithValue("name", "Updated Name");
     }
 
     @Test
@@ -90,12 +96,13 @@ class JdbcUserRepositoryTest {
 
         userRepository.addFriend(user1.getId(), user2.getId());
         List<User> friends = userRepository.getFriends(user1.getId());
-        assertThat(friends).hasSize(1);
-        assertThat(friends.get(0).getId()).isEqualTo(user2.getId());
+        assertThat(friends)
+                .hasSize(1)
+                .extracting(User::getId)
+                .containsExactly(user2.getId());
 
         userRepository.removeFriend(user1.getId(), user2.getId());
-        friends = userRepository.getFriends(user1.getId());
-        assertThat(friends).isEmpty();
+        assertThat(userRepository.getFriends(user1.getId())).isEmpty();
     }
 
     @Test
@@ -127,8 +134,7 @@ class JdbcUserRepositoryTest {
         User user1 = userRepository.addUser(createTestUser("user1@mail.com", "user1"));
         User user2 = userRepository.addUser(createTestUser("user2@mail.com", "user2"));
 
-        List<User> commonFriends = userRepository.getCommonFriends(user1.getId(), user2.getId());
-        assertThat(commonFriends).isEmpty();
+        assertThat(userRepository.getCommonFriends(user1.getId(), user2.getId())).isEmpty();
     }
 
     @Test
@@ -140,23 +146,16 @@ class JdbcUserRepositoryTest {
         assertThat(allUsers)
                 .hasSize(2)
                 .extracting(User::getId)
-                .contains(user1.getId(), user2.getId());
+                .containsExactlyInAnyOrder(user1.getId(), user2.getId());
     }
 
     @Test
     void shouldCheckUserExists() {
         User user = userRepository.addUser(createTestUser("exists@mail.com", "exists"));
 
-        assertTrue(userRepository.userExists(user.getId()));
-        assertFalse(userRepository.userExists(999L));
-    }
-
-    private User createTestUser(String email, String login) {
-        User user = new User();
-        user.setEmail(email);
-        user.setLogin(login);
-        user.setName(login);
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        return user;
+        assertAll(
+                () -> assertTrue(userRepository.userExists(user.getId())),
+                () -> assertFalse(userRepository.userExists(999L))
+        );
     }
 }
