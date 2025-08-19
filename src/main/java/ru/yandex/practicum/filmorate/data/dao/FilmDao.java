@@ -1,10 +1,10 @@
-package ru.yandex.practicum.filmorate.storage.film;
+package ru.yandex.practicum.filmorate.data.dao;
 
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.List;
 
-public interface FilmStorage {
+public interface FilmDao {
     Film addFilm(Film film);
 
     Film updateFilm(Film film);
@@ -18,4 +18,6 @@ public interface FilmStorage {
     void removeLike(long filmId, long userId);
 
     List<Film> getPopularFilms(int count);
+
+    boolean filmExists(long filmId);
 }
