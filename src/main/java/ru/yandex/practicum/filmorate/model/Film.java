@@ -28,6 +28,7 @@ public class Film {
     @Positive(message = "Продолжительность должна быть положительной")
     private int duration;
 
+    private String director;
     private MpaRating mpa;
     private Set<Genre> genres = new HashSet<>();
     private final Set<Long> likes = new HashSet<>();

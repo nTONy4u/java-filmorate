@@ -20,4 +20,6 @@ public interface FilmDao {
     List<Film> getPopularFilms(int count);
 
     boolean filmExists(long filmId);
+
+    List<Film> searchFilms(String query, List<String> searchBy);
 }

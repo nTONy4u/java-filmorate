@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,9 +33,9 @@ public class JdbcFilmRepository implements FilmDao {
 
     @Override
     public Film addFilm(Film film) {
-        log.debug("Добавление фильма: name={}, releaseDate={}", film.getName(), film.getReleaseDate());
-        String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        log.debug("Добавление фильма: name={}, director={}", film.getName(), film.getDirector());
+        String sql = "INSERT INTO films (name, description, release_date, duration, director, mpa_id) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         try {
@@ -44,12 +45,13 @@ public class JdbcFilmRepository implements FilmDao {
                 stmt.setString(2, film.getDescription());
                 stmt.setDate(3, java.sql.Date.valueOf(film.getReleaseDate()));
                 stmt.setInt(4, film.getDuration());
-                stmt.setInt(5, film.getMpa().getId());
+                stmt.setString(5, film.getDirector());
+                stmt.setInt(6, film.getMpa().getId());
                 return stmt;
             }, keyHolder);
 
             film.setId(keyHolder.getKey().longValue());
-            log.info("Фильм добавлен: id={}, name={}", film.getId(), film.getName());
+            log.info("Фильм добавлен: id={}, name={}, director={}", film.getId(), film.getName(), film.getDirector());
 
             saveFilmGenres(film);
             return film;
@@ -61,13 +63,14 @@ public class JdbcFilmRepository implements FilmDao {
 
     @Override
     public Film updateFilm(Film film) {
-        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? " +
+        String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, director = ?, mpa_id = ? " +
                 "WHERE film_id = ?";
         int updated = jdbcTemplate.update(sql,
                 film.getName(),
                 film.getDescription(),
                 film.getReleaseDate(),
                 film.getDuration(),
+                film.getDirector(),
                 film.getMpa().getId(),
                 film.getId());
 
@@ -128,6 +131,63 @@ public class JdbcFilmRepository implements FilmDao {
         return jdbcTemplate.query(sql, this::mapRowToFilm, count);
     }
 
+
+    @Override
+    public List<Film> searchFilms(String query, List<String> searchBy) {
+        log.debug("Поиск фильмов: query={}, searchBy={}", query, searchBy);
+
+        if (query == null || query.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        String searchPattern = "%" + query.toLowerCase() + "%";
+        List<Object> params = new ArrayList<>();
+        StringBuilder sqlBuilder = new StringBuilder(
+                "SELECT DISTINCT f.*, COUNT(l.user_id) as likes_count FROM films f " +
+                        "LEFT JOIN likes l ON f.film_id = l.film_id "
+        );
+
+        List<String> conditions = new ArrayList<>();
+
+        if (searchBy.contains("title")) {
+            conditions.add("LOWER(f.name) LIKE ?");
+            params.add(searchPattern);
+        }
+
+        if (searchBy.contains("director")) {
+            conditions.add("LOWER(f.director) LIKE ?");
+            params.add(searchPattern);
+        }
+
+        if (conditions.isEmpty()) {
+            // Если не указано, по чему искать, ищем по обоим полям
+            conditions.add("(LOWER(f.name) LIKE ? OR LOWER(f.director) LIKE ?)");
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+
+        if (!conditions.isEmpty()) {
+            sqlBuilder.append("WHERE (");
+            sqlBuilder.append(String.join(" OR ", conditions));
+            sqlBuilder.append(")");
+        }
+
+        sqlBuilder.append(" GROUP BY f.film_id ORDER BY likes_count DESC");
+
+        return jdbcTemplate.query(
+                sqlBuilder.toString(),
+                params.toArray(),
+                this::mapRowToFilm
+        );
+    }
+
+    @Override
+    public boolean filmExists(long filmId) {
+        String sql = "SELECT COUNT(*) FROM films WHERE film_id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId);
+        return count != null && count > 0;
+    }
+
     private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
         Film film = new Film();
         film.setId(rs.getLong("film_id"));
@@ -135,6 +195,7 @@ public class JdbcFilmRepository implements FilmDao {
         film.setDescription(rs.getString("description"));
         film.setReleaseDate(rs.getDate("release_date").toLocalDate());
         film.setDuration(rs.getInt("duration"));
+        film.setDirector(rs.getString("director"));
 
         int mpaId = rs.getInt("mpa_id");
         film.setMpa(mpaDao.getMpaById(mpaId));
@@ -160,12 +221,5 @@ public class JdbcFilmRepository implements FilmDao {
                     })
                     .collect(Collectors.toList()));
         }
-    }
-
-    @Override
-    public boolean filmExists(long filmId) {
-        String sql = "SELECT COUNT(*) FROM films WHERE film_id = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, filmId);
-        return count != null && count > 0;
     }
 }

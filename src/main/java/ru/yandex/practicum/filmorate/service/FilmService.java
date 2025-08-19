@@ -122,4 +122,18 @@ public class FilmService {
             }
         }
     }
+    public List<Film> searchFilms(String query, List<String> searchBy) {
+        if (query == null || query.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        List<Film> films = filmDao.searchFilms(query, searchBy);
+
+        films.forEach(film -> {
+            Set<Genre> genres = genreService.getGenresByFilmId(film.getId());
+            film.setGenres(genres);
+        });
+
+        return films;
+    }
 }

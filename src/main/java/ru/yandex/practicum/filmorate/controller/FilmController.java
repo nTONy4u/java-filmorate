@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -65,5 +66,16 @@ public class FilmController {
             @RequestParam(defaultValue = "10", required = false) int count) {
         log.info("Получение {} самых популярных фильмов", count);
         return filmService.getPopularFilms(count);
+    }
+
+    @GetMapping("/search")
+    public List<Film> searchFilms(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "title,director") String by) {
+
+        log.info("Поиск фильмов: query={}, by={}", query, by);
+
+        List<String> searchBy = Arrays.asList(by.split(","));
+        return filmService.searchFilms(query, searchBy);
     }
 }
